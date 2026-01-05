@@ -23,8 +23,13 @@ async function bootstrap() {
   // Apply response interceptor to standardize API responses
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-  // Enable CORS for cross-origin requests
-  app.enableCors();
+  // Enable CORS for cross-origin requests (allow frontend)
+  app.enableCors({
+    origin: ['http://localhost:5173', 'http://localhost:3001', 'http://localhost:4173'], // Vite dev and preview ports
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+  });
 
   // Configure Swagger documentation
   const config = new DocumentBuilder()
