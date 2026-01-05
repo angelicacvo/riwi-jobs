@@ -13,7 +13,6 @@ async function runSeeders() {
     console.log('📦 Database connection established');
     console.log('');
 
-    // Run seeders in order
     const userSeeder = new UserSeeder();
     await userSeeder.run(dataSource);
     console.log('');

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -58,12 +59,28 @@ export class UsersService {
   ): Promise<User> {
     const user = await this.findOne(id);
 
-    // Only admins can change roles
+    if (updateUserDto.role && currentUser.id === id) {
+      throw new ForbiddenException('You cannot change your own role');
+    }
+
     if (updateUserDto.role && currentUser.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only administrators can change user roles');
     }
 
-    // Check if email is being updated and if it already exists
+    if (
+      updateUserDto.role &&
+      user.role === UserRole.ADMIN &&
+      currentUser.role !== UserRole.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only administrators can modify other administrators',
+      );
+    }
+
+    if (updateUserDto.password && currentUser.id !== id) {
+      throw new ForbiddenException('You can only change your own password');
+    }
+
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const existingUser = await this.usersRepository.findOne({
         where: { email: updateUserDto.email },
@@ -78,8 +95,25 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, currentUser: User): Promise<void> {
     const user = await this.findOne(id);
+
+    if (currentUser.id === id) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    if (user.role === UserRole.ADMIN) {
+      const adminCount = await this.usersRepository.count({
+        where: { role: UserRole.ADMIN },
+      });
+
+      if (adminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot delete the last administrator in the system',
+        );
+      }
+    }
+
     await this.usersRepository.remove(user);
   }
 }

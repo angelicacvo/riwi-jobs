@@ -38,7 +38,6 @@ export class UsersController {
 
   @Get(':id')
   async findOne(@Param('id') id: string, @CurrentUser() currentUser: User) {
-    // Only admin or the user themselves can view the profile
     if (currentUser.role !== UserRole.ADMIN && currentUser.id !== id) {
       throw new ForbiddenException(
         'You can only view your own profile or be an administrator',
@@ -53,7 +52,6 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @CurrentUser() currentUser: User,
   ) {
-    // Only admin or the user themselves can update
     if (currentUser.role !== UserRole.ADMIN && currentUser.id !== id) {
       throw new ForbiddenException(
         'You can only update your own profile or be an administrator',
@@ -64,8 +62,8 @@ export class UsersController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  async remove(@Param('id') id: string) {
-    await this.usersService.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    await this.usersService.remove(id, currentUser);
     return { message: 'User deleted successfully' };
   }
 }
