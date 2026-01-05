@@ -23,7 +23,20 @@ npm run start:dev
 
 Aplicación disponible en: `http://localhost:3000`
 
-## 🔑 Credenciales de prueba (Seeders)
+## � Documentación API (Swagger)
+
+La documentación interactiva de la API está disponible en:
+
+**URL**: `http://localhost:3000/api/docs`
+
+La interfaz Swagger incluye:
+- 📚 Documentación completa de todos los endpoints
+- 🔐 Autenticación Bearer JWT + API Key
+- 🧪 Prueba de endpoints en tiempo real
+- 📋 Esquemas de request/response
+- 🎯 Filtros de roles (ADMIN, GESTOR, CODER)
+
+## �🔑 Credenciales de prueba (Seeders)
 
 | Nombre | Email | Password | Rol |
 |--------|-------|----------|-----|
