@@ -4,24 +4,34 @@ import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
+/**
+ * Bootstrap function to initialize and configure the NestJS application
+ */
 async function bootstrap() {
+  // Create NestJS application instance
   const app = await NestFactory.create(AppModule);
+  
+  // Configure global validation pipe for all incoming requests
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Strip properties that don't have decorators
+      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties exist
+      transform: true, // Transform payloads to DTO instances
     }),
   );
 
+  // Apply response interceptor to standardize API responses
   app.useGlobalInterceptors(new ResponseInterceptor());
 
+  // Enable CORS for cross-origin requests
   app.enableCors();
 
+  // Configure Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Riwi Jobs API')
-    .setDescription('API REST para gestión de vacantes laborales y postulaciones')
+    .setDescription('REST API for job vacancy management and developer applications')
     .setVersion('1.0')
+    // Add JWT Bearer authentication scheme
     .addBearerAuth(
       {
         type: 'http',
@@ -33,6 +43,7 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
+    // Add API Key authentication scheme
     .addApiKey(
       {
         type: 'apiKey',
@@ -44,11 +55,13 @@ async function bootstrap() {
     )
     .build();
 
+  // Generate Swagger document and setup UI
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Start listening on configured port
   await app.listen(process.env.PORT ?? 3000);
-  console.log(`🚀 Application is running on: http://localhost:${process.env.PORT ?? 3000}`);
-  console.log(`📚 Swagger docs available at: http://localhost:${process.env.PORT ?? 3000}/api/docs`);
+  console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3000}`);
+  console.log(`Swagger docs available at: http://localhost:${process.env.PORT ?? 3000}/api/docs`);
 }
 bootstrap();
