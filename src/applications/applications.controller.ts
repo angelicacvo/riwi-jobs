@@ -1,34 +1,48 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { UserRole } from '../common/enums/roles.enum';
 
 @Controller('applications')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
 
   @Post()
-  create(@Body() createApplicationDto: CreateApplicationDto) {
-    return this.applicationsService.create(createApplicationDto);
+  @Roles(UserRole.CODER)
+  async create(
+    @Body() createApplicationDto: CreateApplicationDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return await this.applicationsService.create(createApplicationDto, currentUser);
   }
 
   @Get()
-  findAll() {
-    return this.applicationsService.findAll();
+  async findAll(@CurrentUser() currentUser: User) {
+    return await this.applicationsService.findAll(currentUser);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.applicationsService.findOne(+id);
+  async findOne(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    return await this.applicationsService.findOne(id, currentUser);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateApplicationDto: UpdateApplicationDto) {
-    return this.applicationsService.update(+id, updateApplicationDto);
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async update(@Param('id') id: string, @Body() updateApplicationDto: UpdateApplicationDto) {
+    return await this.applicationsService.update(id, updateApplicationDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.applicationsService.remove(+id);
+  @Roles(UserRole.ADMIN)
+  async remove(@Param('id') id: string) {
+    await this.applicationsService.remove(id);
+    return { message: 'Application deleted successfully' };
   }
 }
