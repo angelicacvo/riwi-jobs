@@ -99,11 +99,78 @@ describe('VacanciesService', () => {
 
   describe('findAll', () => {
     it('should return an array of vacancies', async () => {
-      mockRepository.find.mockResolvedValue([mockVacancy]);
+      const mockQueryBuilder: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockVacancy]),
+      };
 
-      const result = await service.findAll();
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findAll({});
 
       expect(result).toEqual([mockVacancy]);
+    });
+
+    it('should filter vacancies by company', async () => {
+      const mockQueryBuilder: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockVacancy]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.findAll({ company: 'Tech Corp' });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'vacancy.company ILIKE :company',
+        { company: '%Tech Corp%' },
+      );
+    });
+
+    it('should filter vacancies by modality', async () => {
+      const mockQueryBuilder: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockVacancy]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.findAll({ modality: ModalityEnum.REMOTE });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'vacancy.modality = :modality',
+        { modality: ModalityEnum.REMOTE },
+      );
+    });
+
+    it('should apply pagination', async () => {
+      const mockQueryBuilder: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockVacancy]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      await service.findAll({ page: 2, limit: 10 });
+
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
     });
   });
 
@@ -165,6 +232,28 @@ describe('VacanciesService', () => {
       const result = await service.toggleActive('1');
 
       expect(result.isActive).toBe(false);
+    });
+  });
+
+  describe('findAvailableVacancies', () => {
+    it('should return vacancies with available slots', async () => {
+      const mockQueryBuilder: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockVacancy]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findAvailableVacancies();
+
+      expect(result).toEqual([mockVacancy]);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'vacancy.isActive = :isActive',
+        { isActive: true },
+      );
     });
   });
 
