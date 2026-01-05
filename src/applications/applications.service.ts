@@ -134,4 +134,82 @@ export class ApplicationsService {
       isFullyBooked: currentApplications >= vacancy.maxApplicants,
     };
   }
+
+  async getUserStats(userId: string) {
+    const totalApplications = await this.applicationsRepository.count({
+      where: { userId },
+    });
+
+    const applications = await this.applicationsRepository.find({
+      where: { userId },
+      relations: ['vacancy'],
+      order: { appliedAt: 'DESC' },
+    });
+
+    return {
+      userId,
+      totalApplications,
+      activeApplications: totalApplications,
+      recentApplications: applications.slice(0, 5),
+    };
+  }
+
+  async getVacancyApplicationsCount(vacancyId: string): Promise<number> {
+    return await this.applicationsRepository.count({
+      where: { vacancyId },
+    });
+  }
+
+  async getMostPopularVacancies(limit: number = 10) {
+    const result = await this.applicationsRepository
+      .createQueryBuilder('application')
+      .select('application.vacancyId', 'vacancyId')
+      .addSelect('COUNT(application.id)', 'applicationsCount')
+      .leftJoin('application.vacancy', 'vacancy')
+      .addSelect('vacancy.title', 'title')
+      .addSelect('vacancy.company', 'company')
+      .groupBy('application.vacancyId')
+      .addGroupBy('vacancy.title')
+      .addGroupBy('vacancy.company')
+      .orderBy('applicationsCount', 'DESC')
+      .limit(limit)
+      .getRawMany();
+
+    return result.map((item) => ({
+      vacancyId: item.vacancyId,
+      title: item.title,
+      company: item.company,
+      applicationsCount: parseInt(item.applicationsCount),
+    }));
+  }
+
+  async getDashboardStats() {
+    const totalApplications = await this.applicationsRepository.count();
+
+    const applicationsByVacancy = await this.applicationsRepository
+      .createQueryBuilder('application')
+      .select('COUNT(DISTINCT application.vacancyId)', 'vacanciesWithApplications')
+      .getRawOne();
+
+    const applicationsByUser = await this.applicationsRepository
+      .createQueryBuilder('application')
+      .select('COUNT(DISTINCT application.userId)', 'usersWithApplications')
+      .getRawOne();
+
+    const recentApplications = await this.applicationsRepository.find({
+      relations: ['user', 'vacancy'],
+      order: { appliedAt: 'DESC' },
+      take: 10,
+    });
+
+    const mostPopular = await this.getMostPopularVacancies(5);
+
+    return {
+      totalApplications,
+      vacanciesWithApplications: parseInt(applicationsByVacancy.vacanciesWithApplications),
+      usersWithApplications: parseInt(applicationsByUser.usersWithApplications),
+      recentApplications,
+      mostPopularVacancies: mostPopular,
+    };
+  }
 }

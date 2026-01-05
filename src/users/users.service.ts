@@ -116,4 +116,32 @@ export class UsersService {
 
     await this.usersRepository.remove(user);
   }
+
+  async getUsersStats() {
+    const totalUsers = await this.usersRepository.count();
+    
+    const usersByRole = await this.usersRepository
+      .createQueryBuilder('user')
+      .select('user.role', 'role')
+      .addSelect('COUNT(user.id)', 'count')
+      .groupBy('user.role')
+      .getRawMany();
+
+    const roleStats = usersByRole.reduce((acc, item) => {
+      acc[item.role] = parseInt(item.count);
+      return acc;
+    }, {});
+
+    const recentUsers = await this.usersRepository.find({
+      order: { createdAt: 'DESC' },
+      take: 5,
+      select: ['id', 'name', 'email', 'role', 'createdAt'],
+    });
+
+    return {
+      totalUsers,
+      usersByRole: roleStats,
+      recentUsers,
+    };
+  }
 }

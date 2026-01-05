@@ -74,4 +74,57 @@ export class VacanciesService {
     vacancy.isActive = !vacancy.isActive;
     return await this.vacanciesRepository.save(vacancy);
   }
+
+  async getVacancyStats(vacancyId: string) {
+    const vacancy = await this.vacanciesRepository.findOne({
+      where: { id: vacancyId },
+      relations: ['applications'],
+    });
+
+    if (!vacancy) {
+      throw new NotFoundException(`Vacancy with ID ${vacancyId} not found`);
+    }
+
+    const currentApplications = vacancy.applications?.length || 0;
+    const availableSlots = vacancy.maxApplicants - currentApplications;
+
+    return {
+      vacancyId,
+      title: vacancy.title,
+      company: vacancy.company,
+      maxApplicants: vacancy.maxApplicants,
+      currentApplications,
+      availableSlots: availableSlots > 0 ? availableSlots : 0,
+      isFullyBooked: currentApplications >= vacancy.maxApplicants,
+      isActive: vacancy.isActive,
+    };
+  }
+
+  async getGeneralStats() {
+    const totalVacancies = await this.vacanciesRepository.count();
+    const activeVacancies = await this.vacanciesRepository.count({
+      where: { isActive: true },
+    });
+
+    const vacanciesWithSlots = await this.vacanciesRepository
+      .createQueryBuilder('vacancy')
+      .where('vacancy.isActive = :isActive', { isActive: true })
+      .andWhere(
+        '(SELECT COUNT(*) FROM application WHERE application.vacancyId = vacancy.id) < vacancy.maxApplicants',
+      )
+      .getCount();
+
+    const mostRecentVacancies = await this.vacanciesRepository.find({
+      order: { createdAt: 'DESC' },
+      take: 5,
+    });
+
+    return {
+      totalVacancies,
+      activeVacancies,
+      inactiveVacancies: totalVacancies - activeVacancies,
+      vacanciesWithAvailableSlots: vacanciesWithSlots,
+      mostRecentVacancies,
+    };
+  }
 }

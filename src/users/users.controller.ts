@@ -66,4 +66,10 @@ export class UsersController {
     await this.usersService.remove(id, currentUser);
     return { message: 'User deleted successfully' };
   }
+
+  @Get('stats/overview')
+  @Roles(UserRole.ADMIN)
+  async getUsersStats() {
+    return await this.usersService.getUsersStats();
+  }
 }

@@ -41,6 +41,7 @@ describe('UsersService', () => {
     findOne: jest.fn(),
     remove: jest.fn(),
     count: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -174,6 +175,36 @@ describe('UsersService', () => {
 
       const anotherAdmin = { ...mockAdmin, id: '3', hashPassword: jest.fn(), comparePassword: jest.fn() };
       await expect(service.remove('2', anotherAdmin as any)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getUsersStats', () => {
+    it('should return users statistics', async () => {
+      mockRepository.count.mockResolvedValue(25);
+
+      const mockQueryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          { role: UserRole.ADMIN, count: '2' },
+          { role: UserRole.GESTOR, count: '5' },
+          { role: UserRole.CODER, count: '18' },
+        ]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      mockRepository.find.mockResolvedValue([mockUser]);
+
+      const result = await service.getUsersStats();
+
+      expect(result.totalUsers).toBe(25);
+      expect(result.usersByRole).toEqual({
+        [UserRole.ADMIN]: 2,
+        [UserRole.GESTOR]: 5,
+        [UserRole.CODER]: 18,
+      });
+      expect(result.recentUsers).toEqual([mockUser]);
     });
   });
 });

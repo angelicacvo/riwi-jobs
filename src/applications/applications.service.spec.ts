@@ -51,6 +51,7 @@ describe('ApplicationsService', () => {
     findOne: jest.fn(),
     remove: jest.fn(),
     count: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockVacanciesService = {
@@ -235,6 +236,98 @@ describe('ApplicationsService', () => {
 
       expect(result.isFullyBooked).toBe(true);
       expect(result.availableSlots).toBe(0);
+    });
+  });
+
+  describe('getUserStats', () => {
+    it('should return user statistics', async () => {
+      mockRepository.count.mockResolvedValue(3);
+      mockRepository.find.mockResolvedValue([mockApplication]);
+
+      const result = await service.getUserStats('1');
+
+      expect(result).toEqual({
+        userId: '1',
+        totalApplications: 3,
+        activeApplications: 3,
+        recentApplications: [mockApplication],
+      });
+    });
+  });
+
+  describe('getVacancyApplicationsCount', () => {
+    it('should return applications count for vacancy', async () => {
+      mockRepository.count.mockResolvedValue(7);
+
+      const result = await service.getVacancyApplicationsCount('1');
+
+      expect(result).toBe(7);
+    });
+  });
+
+  describe('getMostPopularVacancies', () => {
+    it('should return most popular vacancies', async () => {
+      const mockQueryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          {
+            vacancyId: '1',
+            title: 'Backend Developer',
+            company: 'Tech Corp',
+            applicationsCount: '5',
+          },
+        ]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.getMostPopularVacancies(10);
+
+      expect(result).toEqual([
+        {
+          vacancyId: '1',
+          title: 'Backend Developer',
+          company: 'Tech Corp',
+          applicationsCount: 5,
+        },
+      ]);
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    it('should return dashboard statistics', async () => {
+      mockRepository.count.mockResolvedValue(15);
+      
+      const mockQueryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ vacanciesWithApplications: '5', usersWithApplications: '8' }),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      mockRepository.find.mockResolvedValue([mockApplication]);
+
+      const mockPopular = [
+        {
+          vacancyId: '1',
+          title: 'Backend Developer',
+          company: 'Tech Corp',
+          applicationsCount: 5,
+        },
+      ];
+
+      jest.spyOn(service, 'getMostPopularVacancies').mockResolvedValue(mockPopular);
+
+      const result = await service.getDashboardStats();
+
+      expect(result.totalApplications).toBe(15);
+      expect(result.vacanciesWithApplications).toBe(5);
+      expect(result.usersWithApplications).toBe(8);
     });
   });
 });

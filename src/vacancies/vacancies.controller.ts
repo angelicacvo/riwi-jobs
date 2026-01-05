@@ -49,4 +49,16 @@ export class VacanciesController {
     await this.vacanciesService.remove(id);
     return { message: 'Vacancy deleted successfully' };
   }
+
+  @Get('stats/:id')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getVacancyStats(@Param('id') id: string) {
+    return await this.vacanciesService.getVacancyStats(id);
+  }
+
+  @Get('stats/general/overview')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getGeneralStats() {
+    return await this.vacanciesService.getGeneralStats();
+  }
 }

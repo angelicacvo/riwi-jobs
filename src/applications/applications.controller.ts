@@ -51,4 +51,29 @@ export class ApplicationsController {
   async getVacancyStats(@Param('vacancyId') vacancyId: string) {
     return await this.applicationsService.getVacancyStats(vacancyId);
   }
+
+  @Get('stats/user/:userId')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getUserStats(@Param('userId') userId: string) {
+    return await this.applicationsService.getUserStats(userId);
+  }
+
+  @Get('stats/vacancy/:vacancyId')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getVacancyApplicationsCount(@Param('vacancyId') vacancyId: string) {
+    const count = await this.applicationsService.getVacancyApplicationsCount(vacancyId);
+    return { vacancyId, applicationsCount: count };
+  }
+
+  @Get('stats/popular/vacancies')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getMostPopularVacancies() {
+    return await this.applicationsService.getMostPopularVacancies(10);
+  }
+
+  @Get('stats/dashboard')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getDashboardStats() {
+    return await this.applicationsService.getDashboardStats();
+  }
 }
