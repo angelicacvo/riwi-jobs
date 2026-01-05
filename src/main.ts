@@ -25,7 +25,13 @@ async function bootstrap() {
 
   // Enable CORS for cross-origin requests (allow frontend)
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3001', 'http://localhost:4173'], // Vite dev and preview ports
+    origin: [
+      'http://localhost:5173', 
+      'http://localhost:3001', 
+      'http://localhost:4173',
+      'https://riwi-jobs-frontend-production.up.railway.app',
+      /\.railway\.app$/, // Allow all Railway subdomains
+    ], 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
