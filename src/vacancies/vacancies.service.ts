@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateVacancyDto } from './dto/create-vacancy.dto';
@@ -13,6 +13,10 @@ export class VacanciesService {
   ) {}
 
   async create(createVacancyDto: CreateVacancyDto): Promise<Vacancy> {
+    if (createVacancyDto.maxApplicants < 1) {
+      throw new BadRequestException('maxApplicants must be at least 1');
+    }
+
     const vacancy = this.vacanciesRepository.create(createVacancyDto);
     return await this.vacanciesRepository.save(vacancy);
   }
@@ -37,12 +41,37 @@ export class VacanciesService {
 
   async update(id: string, updateVacancyDto: UpdateVacancyDto): Promise<Vacancy> {
     const vacancy = await this.findOne(id);
+
+    if (updateVacancyDto.maxApplicants !== undefined && updateVacancyDto.maxApplicants < 1) {
+      throw new BadRequestException('maxApplicants must be at least 1');
+    }
+
     Object.assign(vacancy, updateVacancyDto);
     return await this.vacanciesRepository.save(vacancy);
   }
 
   async remove(id: string): Promise<void> {
-    const vacancy = await this.findOne(id);
+    const vacancy = await this.vacanciesRepository.findOne({
+      where: { id },
+      relations: ['applications'],
+    });
+
+    if (!vacancy) {
+      throw new NotFoundException(`Vacancy with ID ${id} not found`);
+    }
+
+    if (vacancy.applications && vacancy.applications.length > 0) {
+      throw new BadRequestException(
+        'Cannot delete vacancy with existing applications',
+      );
+    }
+
     await this.vacanciesRepository.remove(vacancy);
+  }
+
+  async toggleActive(id: string): Promise<Vacancy> {
+    const vacancy = await this.findOne(id);
+    vacancy.isActive = !vacancy.isActive;
+    return await this.vacanciesRepository.save(vacancy);
   }
 }

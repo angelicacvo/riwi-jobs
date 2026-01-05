@@ -37,8 +37,14 @@ export class VacanciesController {
     return await this.vacanciesService.update(id, updateVacancyDto);
   }
 
-  @Delete(':id')
+  @Patch(':id/toggle-active')
   @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async toggleActive(@Param('id') id: string) {
+    return await this.vacanciesService.toggleActive(id);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
   async remove(@Param('id') id: string) {
     await this.vacanciesService.remove(id);
     return { message: 'Vacancy deleted successfully' };
