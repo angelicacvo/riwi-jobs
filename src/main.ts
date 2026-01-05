@@ -5,8 +5,6 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -15,10 +13,8 @@ async function bootstrap() {
     }),
   );
 
-  // Global response interceptor
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-  // Enable CORS
   app.enableCors();
 
   await app.listen(process.env.PORT ?? 3000);

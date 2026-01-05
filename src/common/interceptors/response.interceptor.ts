@@ -23,10 +23,10 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         }
 
         if (data && typeof data === 'object' && 'message' in data) {
-          const { message, ...rest } = data;
+          const { message, ...res } = data;
           return {
             success: true,
-            data: rest,
+            data: res,
             message: message || 'Operation successful',
           };
         }
