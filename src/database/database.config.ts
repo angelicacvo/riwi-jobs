@@ -19,13 +19,6 @@ export const getDatabaseConfig = (
     },
   };
 
-  console.log('Database Config:', {
-    host: config.host,
-    port: config.port,
-    database: config.database,
-    username: config.username,
-  });
-
   return config;
 };
 
