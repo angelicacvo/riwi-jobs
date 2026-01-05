@@ -10,12 +10,10 @@ export class ApplicationSeeder {
     const userRepository = dataSource.getRepository(User);
     const vacancyRepository = dataSource.getRepository(Vacancy);
 
-    // Get coders
     const coders = await userRepository.find({
       where: { role: UserRole.CODER },
     });
 
-    // Get vacancies
     const vacancies = await vacancyRepository.find({
       where: { isActive: true },
     });
@@ -25,7 +23,6 @@ export class ApplicationSeeder {
       return;
     }
 
-    // Create some applications
     const applicationsToCreate = [
       { coder: coders[0], vacancy: vacancies[0] },
       { coder: coders[0], vacancy: vacancies[1] },
