@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { VacanciesService } from './vacancies.service';
 import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
+import { QueryVacancyDto } from './dto/query-vacancy.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -21,8 +22,14 @@ export class VacanciesController {
 
   @Get()
   @Public()
-  async findAll() {
-    return await this.vacanciesService.findAll();
+  async findAll(@Query() queryDto: QueryVacancyDto) {
+    return await this.vacanciesService.findAll(queryDto);
+  }
+
+  @Get('available/slots')
+  @Public()
+  async findAvailableVacancies() {
+    return await this.vacanciesService.findAvailableVacancies();
   }
 
   @Get(':id')
