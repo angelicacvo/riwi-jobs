@@ -1,11 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { Application } from '../../applications/entities/application.entity';
-
-export enum ModalityEnum {
-  REMOTE = 'remote',
-  HYBRID = 'hybrid',
-  ONSITE = 'onsite',
-}
+import { ModalityEnum } from '../../common/enums/modality.enum';
 
 @Entity('vacancies')
 export class Vacancy {

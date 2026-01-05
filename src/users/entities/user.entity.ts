@@ -1,11 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
 import { Application } from '../../applications/entities/application.entity';
-
-export enum UserRole {
-  ADMIN = 'administrator',
-  GESTOR = 'manager',
-  CODER = 'developer',
-}
+import { UserRole } from '../../common/enums/roles.enum';
 
 @Entity('users')
 export class User {
