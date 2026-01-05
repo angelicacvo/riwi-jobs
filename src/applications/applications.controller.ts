@@ -45,4 +45,10 @@ export class ApplicationsController {
     await this.applicationsService.remove(id);
     return { message: 'Application deleted successfully' };
   }
+
+  @Get('vacancy/:vacancyId/stats')
+  @Roles(UserRole.ADMIN, UserRole.GESTOR)
+  async getVacancyStats(@Param('vacancyId') vacancyId: string) {
+    return await this.applicationsService.getVacancyStats(vacancyId);
+  }
 }

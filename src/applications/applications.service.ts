@@ -27,6 +27,33 @@ export class ApplicationsService {
       throw new BadRequestException('This vacancy is not active');
     }
 
+    const existingApplication = await this.applicationsRepository.findOne({
+      where: {
+        userId: currentUser.id,
+        vacancyId: createApplicationDto.vacancyId,
+      },
+    });
+
+    if (existingApplication) {
+      throw new BadRequestException('You have already applied to this vacancy');
+    }
+
+    const currentApplications = await this.applicationsRepository.count({
+      where: { vacancyId: createApplicationDto.vacancyId },
+    });
+
+    if (currentApplications >= vacancy.maxApplicants) {
+      throw new BadRequestException('This vacancy has reached its maximum number of applicants');
+    }
+
+    const userActiveApplications = await this.applicationsRepository.count({
+      where: { userId: currentUser.id },
+    });
+
+    if (userActiveApplications >= 3) {
+      throw new BadRequestException('You cannot have more than 3 active applications');
+    }
+
     const application = this.applicationsRepository.create({
       userId: currentUser.id,
       vacancyId: createApplicationDto.vacancyId,
@@ -90,5 +117,21 @@ export class ApplicationsService {
     }
 
     await this.applicationsRepository.remove(application);
+  }
+
+  async getVacancyStats(vacancyId: string) {
+    const vacancy = await this.vacanciesService.findOne(vacancyId);
+
+    const currentApplications = await this.applicationsRepository.count({
+      where: { vacancyId },
+    });
+
+    return {
+      vacancyId,
+      maxApplicants: vacancy.maxApplicants,
+      currentApplications,
+      availableSlots: vacancy.maxApplicants - currentApplications,
+      isFullyBooked: currentApplications >= vacancy.maxApplicants,
+    };
   }
 }
