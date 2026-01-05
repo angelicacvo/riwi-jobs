@@ -8,16 +8,29 @@ import { Reflector } from '@nestjs/core';
 import { UserRole } from '../../common/enums/roles.enum';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
+/**
+ * Role-Based Access Control (RBAC) Guard
+ * Checks if authenticated user has required roles to access endpoint
+ * Works with @Roles() decorator
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
+  /**
+   * Validates if user has required role(s) for the route
+   * @param context - Execution context containing request data
+   * @returns Boolean indicating if access is granted
+   * @throws ForbiddenException if user lacks required role
+   */
   canActivate(context: ExecutionContext): boolean {
+    // Get required roles from @Roles() decorator metadata
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
+    // If no roles specified, allow access
     if (!requiredRoles) {
       return true;
     }
@@ -29,6 +42,7 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
+    // Check if user's role is in the list of required roles
     const hasRole = requiredRoles.includes(user.role);
 
     if (!hasRole) {

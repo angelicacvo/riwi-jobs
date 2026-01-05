@@ -181,7 +181,7 @@ CREATE DATABASE riwi_jobs;
 
 #### Configure environment variables:
 
-Create a `.env` file in the project root (you can copy the `.env.example`):
+Create a `.env` file in the project root (you can copy the `.env.example` file if it exists):
 
 ```bash
 # Database
