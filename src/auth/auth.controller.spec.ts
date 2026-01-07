@@ -2,15 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
-/**
- * Unit tests for AuthController
- * Tests registration and login endpoints
- */
 describe('AuthController', () => {
   let controller: AuthController;
   let service: AuthService;
 
-  // Mock AuthService
   const mockAuthService = {
     register: jest.fn(),
     login: jest.fn(),
@@ -31,51 +26,39 @@ describe('AuthController', () => {
     service = module.get<AuthService>(AuthService);
   });
 
-  it('should be defined', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('debe estar definido', () => {
     expect(controller).toBeDefined();
   });
 
   describe('register', () => {
-    it('should register a new user', async () => {
+    it('debe registrar un usuario', async () => {
       const registerDto = {
         name: 'Test User',
         email: 'test@example.com',
-        password: 'Test123!',
+        password: 'password123',
       };
+      const result = { access_token: 'token', user: {}, message: 'Success' };
+      mockAuthService.register.mockResolvedValue(result);
 
-      const expectedResult = {
-        message: 'User registered successfully',
-        user: { id: '1', name: 'Test User', email: 'test@example.com', role: 'coder' },
-        access_token: 'jwt-token',
-      };
-
-      mockAuthService.register.mockResolvedValue(expectedResult);
-
-      const result = await controller.register(registerDto);
-
-      expect(result).toEqual(expectedResult);
+      expect(await controller.register(registerDto)).toEqual(result);
       expect(service.register).toHaveBeenCalledWith(registerDto);
     });
   });
 
   describe('login', () => {
-    it('should login user and return token', async () => {
+    it('debe hacer login de un usuario', async () => {
       const loginDto = {
         email: 'test@example.com',
-        password: 'Test123!',
+        password: 'password123',
       };
+      const result = { access_token: 'token', user: {}, message: 'Success' };
+      mockAuthService.login.mockResolvedValue(result);
 
-      const expectedResult = {
-        message: 'Login successful',
-        user: { id: '1', name: 'Test User', email: 'test@example.com', role: 'coder' },
-        access_token: 'jwt-token',
-      };
-
-      mockAuthService.login.mockResolvedValue(expectedResult);
-
-      const result = await controller.login(loginDto);
-
-      expect(result).toEqual(expectedResult);
+      expect(await controller.login(loginDto)).toEqual(result);
       expect(service.login).toHaveBeenCalledWith(loginDto);
     });
   });

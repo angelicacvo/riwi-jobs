@@ -65,11 +65,8 @@ export class UserSeeder {
       });
 
       if (!existingUser) {
-        const hashedPassword = await bcrypt.hash(userData.password, 10);
-        const user = userRepository.create({
-          ...userData,
-          password: hashedPassword,
-        });
+        // NO hashear aquí - el @BeforeInsert del entity lo hará automáticamente
+        const user = userRepository.create(userData);
         await userRepository.save(user);
         console.log(`✅ User created: ${userData.name} (${userData.email})`);
       } else {

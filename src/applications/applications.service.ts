@@ -8,10 +8,6 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../common/enums/roles.enum';
 import { VacanciesService } from '../vacancies/vacancies.service';
 
-/**
- * Service handling business logic for job applications
- * Implements rules: no duplicate applications, max 3 active per user, vacancy slot limits
- */
 @Injectable()
 export class ApplicationsService {
   constructor(
@@ -20,28 +16,18 @@ export class ApplicationsService {
     private vacanciesService: VacanciesService,
   ) {}
 
-  /**
-   * Create a new job application
-   * @param createApplicationDto - Application data with vacancy ID
-   * @param currentUser - User creating the application
-   * @returns Created application entity
-   * @throws ForbiddenException if user is not a CODER
-   * @throws BadRequestException if business rules are violated
-   */
+  // Crear nueva postulación a una vacante
   async create(createApplicationDto: CreateApplicationDto, currentUser: User): Promise<Application> {
-    // Only CODER role can apply to vacancies
     if (currentUser.role !== UserRole.CODER) {
-      throw new ForbiddenException('Only coders can apply to vacancies');
+      throw new ForbiddenException('Solo los coders pueden postularse a vacantes');
     }
 
-    // Verify vacancy exists and is active
     const vacancy = await this.vacanciesService.findOne(createApplicationDto.vacancyId);
 
     if (!vacancy.isActive) {
-      throw new BadRequestException('This vacancy is not active');
+      throw new BadRequestException('Esta vacante no está activa');
     }
 
-    // Check if user already applied to this vacancy
     const existingApplication = await this.applicationsRepository.findOne({
       where: {
         userId: currentUser.id,
@@ -50,28 +36,17 @@ export class ApplicationsService {
     });
 
     if (existingApplication) {
-      throw new BadRequestException('You have already applied to this vacancy');
+      throw new BadRequestException('Ya te postulaste a esta vacante');
     }
 
-    // Check if vacancy has reached max applicants
     const currentApplications = await this.applicationsRepository.count({
       where: { vacancyId: createApplicationDto.vacancyId },
     });
 
     if (currentApplications >= vacancy.maxApplicants) {
-      throw new BadRequestException('This vacancy has reached its maximum number of applicants');
+      throw new BadRequestException('Esta vacante alcanzó el máximo de postulantes');
     }
 
-    // Check if user has reached max 3 active applications
-    const userActiveApplications = await this.applicationsRepository.count({
-      where: { userId: currentUser.id },
-    });
-
-    if (userActiveApplications >= 3) {
-      throw new BadRequestException('You cannot have more than 3 active applications');
-    }
-
-    // Create and save new application
     const application = this.applicationsRepository.create({
       userId: currentUser.id,
       vacancyId: createApplicationDto.vacancyId,
@@ -80,11 +55,7 @@ export class ApplicationsService {
     return await this.applicationsRepository.save(application);
   }
 
-  /**
-   * Get all applications (filtered by role)
-   * @param currentUser - Current authenticated user
-   * @returns List of applications (all for ADMIN/MANAGER, own for CODER)
-   */
+  // Obtener postulaciones (filtradas por rol)
   async findAll(currentUser: User): Promise<Application[]> {
     // CODER can only see their own applications
     if (currentUser.role === UserRole.CODER) {
@@ -108,11 +79,11 @@ export class ApplicationsService {
     });
 
     if (!application) {
-      throw new NotFoundException(`Application with ID ${id} not found`);
+      throw new NotFoundException(`Postulación con ID ${id} no encontrada`);
     }
 
     if (currentUser.role === UserRole.CODER && application.userId !== currentUser.id) {
-      throw new ForbiddenException('You can only view your own applications');
+      throw new ForbiddenException('Solo puedes ver tus propias postulaciones');
     }
 
     return application;
@@ -124,7 +95,7 @@ export class ApplicationsService {
     });
 
     if (!application) {
-      throw new NotFoundException(`Application with ID ${id} not found`);
+      throw new NotFoundException(`Postulación con ID ${id} no encontrada`);
     }
 
     Object.assign(application, updateApplicationDto);
@@ -137,7 +108,7 @@ export class ApplicationsService {
     });
 
     if (!application) {
-      throw new NotFoundException(`Application with ID ${id} not found`);
+      throw new NotFoundException(`Postulación con ID ${id} no encontrada`);
     }
 
     await this.applicationsRepository.remove(application);
@@ -195,7 +166,7 @@ export class ApplicationsService {
       .groupBy('application.vacancyId')
       .addGroupBy('vacancy.title')
       .addGroupBy('vacancy.company')
-      .orderBy('applicationsCount', 'DESC')
+      .orderBy('"applicationsCount"', 'DESC')
       .limit(limit)
       .getRawMany();
 

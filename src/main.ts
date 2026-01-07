@@ -1,78 +1,82 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-/**
- * Bootstrap function to initialize and configure the NestJS application
- */
 async function bootstrap() {
-  // Create NestJS application instance
-  const app = await NestFactory.create(AppModule);
+  // Desactivar logs verbosos de NestJS
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'],
+  });
   
-  // Configure global validation pipe for all incoming requests
+  // Validación automática de datos de entrada
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strip properties that don't have decorators
-      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties exist
-      transform: true, // Transform payloads to DTO instances
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
-  // Apply response interceptor to standardize API responses
+  // Formato estándar de respuestas
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-  // Enable CORS for cross-origin requests (allow frontend)
+  // Configuración CORS
   app.enableCors({
-    origin: [
-      'http://localhost:5173', 
-      'http://localhost:3001', 
-      'http://localhost:4173',
-      'https://riwi-jobs-frontend-production.up.railway.app',
-      /\.railway\.app$/, // Allow all Railway subdomains
-    ], 
+    origin: (origin, callback) => {
+      // Permite peticiones sin origin (Postman, curl)
+      if (!origin) return callback(null, true);
+      
+      // En desarrollo, permite cualquier localhost sin importar el puerto
+      if (process.env.NODE_ENV !== 'production') {
+        const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        return callback(null, isLocalhost);
+      }
+      
+      // En producción, solo permite la URL configurada en .env
+      const allowed = origin === process.env.FRONTEND_URL;
+      callback(null, allowed);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   });
 
-  // Configure Swagger documentation
+  // Documentación Swagger
   const config = new DocumentBuilder()
     .setTitle('Riwi Jobs API')
-    .setDescription('REST API for job vacancy management and developer applications')
+    .setDescription('API para gestión de vacantes y postulaciones')
     .setVersion('1.0')
-    // Add JWT Bearer authentication scheme
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'Authorization',
-        description: 'Enter JWT token',
+        description: 'Token JWT',
         in: 'header',
       },
       'JWT-auth',
     )
-    // Add API Key authentication scheme
     .addApiKey(
       {
         type: 'apiKey',
         name: 'x-api-key',
         in: 'header',
-        description: 'API Key for authentication',
+        description: 'API Key',
       },
       'x-api-key',
     )
     .build();
 
-  // Generate Swagger document and setup UI
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  // Start listening on configured port
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3000}`);
-  console.log(`Swagger docs available at: http://localhost:${process.env.PORT ?? 3000}/api/docs`);
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  
+  Logger.log(`Application is running on: http://localhost:${port}`, 'Bootstrap');
+  Logger.log(`Swagger docs available at: http://localhost:${port}/api/docs`, 'Bootstrap');
 }
 bootstrap();

@@ -1,22 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-/**
- * Health check controller for monitoring application status
- * Public endpoint - no authentication required
- */
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
-  /**
-   * Health check endpoint
-   * Returns application status and uptime
-   */
   @Get()
-  @ApiOperation({ summary: 'Health check endpoint' })
+  @ApiOperation({ summary: 'Verificar estado del servidor' })
   @ApiResponse({
     status: 200,
-    description: 'Application is healthy',
+    description: 'Servidor funcionando correctamente',
     schema: {
       example: {
         status: 'ok',

@@ -25,7 +25,7 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('El email ya existe');
     }
 
     const user = this.usersRepository.create(createUserDto);
@@ -46,7 +46,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
 
     return user;
@@ -60,11 +60,11 @@ export class UsersService {
     const user = await this.findOne(id);
 
     if (updateUserDto.role && currentUser.id === id) {
-      throw new ForbiddenException('You cannot change your own role');
+      throw new ForbiddenException('No puedes cambiar tu propio rol');
     }
 
     if (updateUserDto.role && currentUser.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only administrators can change user roles');
+      throw new ForbiddenException('Solo los administradores pueden cambiar roles');
     }
 
     if (
@@ -73,12 +73,12 @@ export class UsersService {
       currentUser.role !== UserRole.ADMIN
     ) {
       throw new ForbiddenException(
-        'Only administrators can modify other administrators',
+        'Solo los administradores pueden modificar a otros administradores',
       );
     }
 
     if (updateUserDto.password && currentUser.id !== id) {
-      throw new ForbiddenException('You can only change your own password');
+      throw new ForbiddenException('Solo puedes cambiar tu propia contraseña');
     }
 
     if (updateUserDto.email && updateUserDto.email !== user.email) {
@@ -99,7 +99,7 @@ export class UsersService {
     const user = await this.findOne(id);
 
     if (currentUser.id === id) {
-      throw new BadRequestException('You cannot delete your own account');
+      throw new BadRequestException('No puedes eliminar tu propia cuenta');
     }
 
     if (user.role === UserRole.ADMIN) {
@@ -109,7 +109,7 @@ export class UsersService {
 
       if (adminCount <= 1) {
         throw new BadRequestException(
-          'Cannot delete the last administrator in the system',
+          'No se puede eliminar el último administrador del sistema',
         );
       }
     }

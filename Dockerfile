@@ -1,5 +1,6 @@
 # Dockerfile for Riwi Jobs API
 # Multi-stage build for production-ready Node.js application
+# Compatible with Railway deployment
 
 # Stage 1: Build stage
 FROM node:20-alpine AS builder
@@ -10,7 +11,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies (including devDependencies for build)
 RUN npm ci
 
 # Copy source code
@@ -21,6 +22,9 @@ RUN npm run build
 
 # Stage 2: Production stage
 FROM node:20-alpine AS production
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
 
 # Set working directory
 WORKDIR /app
@@ -36,14 +40,19 @@ COPY --from=builder /app/dist ./dist
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+
+# Change ownership of app directory
+RUN chown -R nestjs:nodejs /app
+
+# Switch to non-root user
 USER nestjs
 
-# Expose application port
+# Expose application port (Railway uses $PORT environment variable)
 EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
-CMD ["node", "--experimental-global-webcrypto", "dist/main.js"]
+# Start the application with dumb-init for proper signal handling
+CMD ["dumb-init", "node", "dist/main.js"]

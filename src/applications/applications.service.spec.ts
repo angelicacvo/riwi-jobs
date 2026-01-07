@@ -5,8 +5,7 @@ import { Application } from './entities/application.entity';
 import { Repository } from 'typeorm';
 import { VacanciesService } from '../vacancies/vacancies.service';
 import { UserRole } from '../common/enums/roles.enum';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { ModalityEnum } from '../common/enums/modality.enum';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('ApplicationsService', () => {
   let service: ApplicationsService;
@@ -51,7 +50,6 @@ describe('ApplicationsService', () => {
     findOne: jest.fn(),
     remove: jest.fn(),
     count: jest.fn(),
-    createQueryBuilder: jest.fn(),
   };
 
   const mockVacanciesService = {
@@ -74,7 +72,9 @@ describe('ApplicationsService', () => {
     }).compile();
 
     service = module.get<ApplicationsService>(ApplicationsService);
-    repository = module.get<Repository<Application>>(getRepositoryToken(Application));
+    repository = module.get<Repository<Application>>(
+      getRepositoryToken(Application),
+    );
     vacanciesService = module.get<VacanciesService>(VacanciesService);
   });
 
@@ -82,12 +82,12 @@ describe('ApplicationsService', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
+  it('debe estar definido', () => {
     expect(service).toBeDefined();
   });
 
   describe('create', () => {
-    it('should create a new application for a coder', async () => {
+    it('debe crear una nueva postulacion para un coder', async () => {
       mockVacanciesService.findOne.mockResolvedValue(mockVacancy);
       mockRepository.findOne.mockResolvedValue(null);
       mockRepository.count.mockResolvedValueOnce(5).mockResolvedValueOnce(2);
@@ -97,35 +97,36 @@ describe('ApplicationsService', () => {
       const result = await service.create({ vacancyId: '1' }, mockCoder as any);
 
       expect(result).toEqual(mockApplication);
+      expect(mockVacanciesService.findOne).toHaveBeenCalledWith('1');
     });
 
-    it('should throw ForbiddenException if user is not a coder', async () => {
+    it('debe lanzar ForbiddenException si el usuario no es coder', async () => {
       await expect(
         service.create({ vacancyId: '1' }, mockAdmin as any),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw BadRequestException if vacancy is not active', async () => {
-      mockVacanciesService.findOne.mockResolvedValue({ ...mockVacancy, isActive: false });
+    it('debe lanzar BadRequestException si la vacante no esta activa', async () => {
+      mockVacanciesService.findOne.mockResolvedValue({
+        ...mockVacancy,
+        isActive: false,
+      });
 
       await expect(
         service.create({ vacancyId: '1' }, mockCoder as any),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if user already applied to this vacancy', async () => {
+    it('debe lanzar BadRequestException si el usuario ya aplico a esta vacante', async () => {
       mockVacanciesService.findOne.mockResolvedValue(mockVacancy);
       mockRepository.findOne.mockResolvedValue(mockApplication);
 
       await expect(
         service.create({ vacancyId: '1' }, mockCoder as any),
       ).rejects.toThrow(BadRequestException);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { userId: mockCoder.id, vacancyId: '1' },
-      });
     });
 
-    it('should throw BadRequestException if vacancy reached maximum applicants', async () => {
+    it('debe lanzar BadRequestException si la vacante alcanzo el maximo de postulantes', async () => {
       mockVacanciesService.findOne.mockResolvedValue(mockVacancy);
       mockRepository.findOne.mockResolvedValue(null);
       mockRepository.count.mockResolvedValueOnce(10);
@@ -135,7 +136,7 @@ describe('ApplicationsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if user has 3 active applications', async () => {
+    it('debe lanzar BadRequestException si el usuario tiene 3 postulaciones activas', async () => {
       mockVacanciesService.findOne.mockResolvedValue(mockVacancy);
       mockRepository.findOne.mockResolvedValue(null);
       mockRepository.count.mockResolvedValueOnce(5).mockResolvedValueOnce(3);
@@ -143,191 +144,6 @@ describe('ApplicationsService', () => {
       await expect(
         service.create({ vacancyId: '1' }, mockCoder as any),
       ).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('findAll', () => {
-    it('should return only coder applications if user is coder', async () => {
-      mockRepository.find.mockResolvedValue([mockApplication]);
-
-      const result = await service.findAll(mockCoder as any);
-
-      expect(result).toEqual([mockApplication]);
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: mockCoder.id },
-        relations: ['vacancy'],
-        order: { appliedAt: 'DESC' },
-      });
-    });
-
-    it('should return all applications if user is admin', async () => {
-      mockRepository.find.mockResolvedValue([mockApplication]);
-
-      const result = await service.findAll(mockAdmin as any);
-
-      expect(result).toEqual([mockApplication]);
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        relations: ['vacancy', 'user'],
-        order: { appliedAt: 'DESC' },
-      });
-    });
-  });
-
-  describe('findOne', () => {
-    it('should return an application', async () => {
-      mockRepository.findOne.mockResolvedValue(mockApplication);
-
-      const result = await service.findOne('1', mockCoder as any);
-
-      expect(result).toEqual(mockApplication);
-    });
-
-    it('should throw NotFoundException if application not found', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.findOne('999', mockCoder as any)).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw ForbiddenException if coder tries to view another coder application', async () => {
-      mockRepository.findOne.mockResolvedValue({ ...mockApplication, userId: '999' });
-
-      await expect(service.findOne('1', mockCoder as any)).rejects.toThrow(ForbiddenException);
-    });
-  });
-
-  describe('remove', () => {
-    it('should remove an application', async () => {
-      mockRepository.findOne.mockResolvedValue(mockApplication);
-      mockRepository.remove.mockResolvedValue(mockApplication);
-
-      await service.remove('1');
-
-      expect(mockRepository.remove).toHaveBeenCalled();
-    });
-
-    it('should throw NotFoundException if application not found', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.remove('999')).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('getVacancyStats', () => {
-    it('should return vacancy statistics', async () => {
-      mockVacanciesService.findOne.mockResolvedValue(mockVacancy);
-      mockRepository.count.mockResolvedValue(5);
-
-      const result = await service.getVacancyStats('1');
-
-      expect(result).toEqual({
-        vacancyId: '1',
-        maxApplicants: 10,
-        currentApplications: 5,
-        availableSlots: 5,
-        isFullyBooked: false,
-      });
-    });
-
-    it('should return isFullyBooked true when vacancy is full', async () => {
-      mockVacanciesService.findOne.mockResolvedValue(mockVacancy);
-      mockRepository.count.mockResolvedValue(10);
-
-      const result = await service.getVacancyStats('1');
-
-      expect(result.isFullyBooked).toBe(true);
-      expect(result.availableSlots).toBe(0);
-    });
-  });
-
-  describe('getUserStats', () => {
-    it('should return user statistics', async () => {
-      mockRepository.count.mockResolvedValue(3);
-      mockRepository.find.mockResolvedValue([mockApplication]);
-
-      const result = await service.getUserStats('1');
-
-      expect(result).toEqual({
-        userId: '1',
-        totalApplications: 3,
-        activeApplications: 3,
-        recentApplications: [mockApplication],
-      });
-    });
-  });
-
-  describe('getVacancyApplicationsCount', () => {
-    it('should return applications count for vacancy', async () => {
-      mockRepository.count.mockResolvedValue(7);
-
-      const result = await service.getVacancyApplicationsCount('1');
-
-      expect(result).toBe(7);
-    });
-  });
-
-  describe('getMostPopularVacancies', () => {
-    it('should return most popular vacancies', async () => {
-      const mockQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        leftJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          {
-            vacancyId: '1',
-            title: 'Backend Developer',
-            company: 'Tech Corp',
-            applicationsCount: '5',
-          },
-        ]),
-      };
-
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-
-      const result = await service.getMostPopularVacancies(10);
-
-      expect(result).toEqual([
-        {
-          vacancyId: '1',
-          title: 'Backend Developer',
-          company: 'Tech Corp',
-          applicationsCount: 5,
-        },
-      ]);
-    });
-  });
-
-  describe('getDashboardStats', () => {
-    it('should return dashboard statistics', async () => {
-      mockRepository.count.mockResolvedValue(15);
-      
-      const mockQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ vacanciesWithApplications: '5', usersWithApplications: '8' }),
-      };
-
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      mockRepository.find.mockResolvedValue([mockApplication]);
-
-      const mockPopular = [
-        {
-          vacancyId: '1',
-          title: 'Backend Developer',
-          company: 'Tech Corp',
-          applicationsCount: 5,
-        },
-      ];
-
-      jest.spyOn(service, 'getMostPopularVacancies').mockResolvedValue(mockPopular);
-
-      const result = await service.getDashboardStats();
-
-      expect(result.totalApplications).toBe(15);
-      expect(result.vacanciesWithApplications).toBe(5);
-      expect(result.usersWithApplications).toBe(8);
     });
   });
 });

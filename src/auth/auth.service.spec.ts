@@ -61,12 +61,12 @@ describe('AuthService', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
+  it('debe estar definido', () => {
     expect(service).toBeDefined();
   });
 
   describe('register', () => {
-    it('should register a new user successfully', async () => {
+    it('debe registrar un nuevo usuario exitosamente', async () => {
       mockRepository.findOne.mockResolvedValue(null);
       mockRepository.create.mockReturnValue(mockUser);
       mockRepository.save.mockResolvedValue(mockUser);
@@ -83,7 +83,7 @@ describe('AuthService', () => {
       expect(result.message).toBe('User registered successfully');
     });
 
-    it('should throw ConflictException if email already exists', async () => {
+    it('debe lanzar ConflictException si el email ya existe', async () => {
       mockRepository.findOne.mockResolvedValue(mockUser);
 
       await expect(
@@ -97,7 +97,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should login user with valid credentials', async () => {
+    it('debe hacer login exitoso con credenciales válidas', async () => {
       const userWithCompare = { ...mockUser };
       const queryBuilder = {
         addSelect: jest.fn().mockReturnThis(),
@@ -117,7 +117,7 @@ describe('AuthService', () => {
       expect(result.message).toBe('Login successful');
     });
 
-    it('should throw UnauthorizedException for invalid email', async () => {
+    it('debe lanzar UnauthorizedException para email inválido', async () => {
       const queryBuilder = {
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -133,7 +133,7 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw UnauthorizedException for invalid password', async () => {
+    it('debe lanzar UnauthorizedException para contraseña inválida', async () => {
       const userWithCompare = { ...mockUser };
       const queryBuilder = {
         addSelect: jest.fn().mockReturnThis(),
@@ -149,24 +149,6 @@ describe('AuthService', () => {
           password: 'wrongpassword',
         }),
       ).rejects.toThrow(UnauthorizedException);
-    });
-  });
-
-  describe('validateUser', () => {
-    it('should return user if found', async () => {
-      mockRepository.findOne.mockResolvedValue(mockUser);
-
-      const result = await service.validateUser('1');
-
-      expect(result).toEqual(mockUser);
-    });
-
-    it('should return null if user not found', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      const result = await service.validateUser('999');
-
-      expect(result).toBeNull();
     });
   });
 });

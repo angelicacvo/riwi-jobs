@@ -15,7 +15,7 @@ export class VacanciesService {
 
   async create(createVacancyDto: CreateVacancyDto): Promise<Vacancy> {
     if (createVacancyDto.maxApplicants < 1) {
-      throw new BadRequestException('maxApplicants must be at least 1');
+      throw new BadRequestException('El número máximo de postulantes debe ser al menos 1');
     }
 
     const vacancy = this.vacanciesRepository.create(createVacancyDto);
@@ -61,7 +61,7 @@ export class VacanciesService {
 
     if (hasAvailableSlots) {
       queryBuilder.andWhere(
-        '(SELECT COUNT(*) FROM application WHERE application.vacancyId = vacancy.id) < vacancy.maxApplicants',
+        '(SELECT COUNT(*) FROM applications WHERE applications.vacancy_id = vacancy.id) < vacancy."maxApplicants"',
       );
     }
 
@@ -80,7 +80,7 @@ export class VacanciesService {
     });
 
     if (!vacancy) {
-      throw new NotFoundException(`Vacancy with ID ${id} not found`);
+      throw new NotFoundException(`Vacante con ID ${id} no encontrada`);
     }
 
     return vacancy;
@@ -90,7 +90,7 @@ export class VacanciesService {
     const vacancy = await this.findOne(id);
 
     if (updateVacancyDto.maxApplicants !== undefined && updateVacancyDto.maxApplicants < 1) {
-      throw new BadRequestException('maxApplicants must be at least 1');
+      throw new BadRequestException('El número máximo de postulantes debe ser al menos 1');
     }
 
     Object.assign(vacancy, updateVacancyDto);
@@ -104,12 +104,12 @@ export class VacanciesService {
     });
 
     if (!vacancy) {
-      throw new NotFoundException(`Vacancy with ID ${id} not found`);
+      throw new NotFoundException(`Vacante con ID ${id} no encontrada`);
     }
 
     if (vacancy.applications && vacancy.applications.length > 0) {
       throw new BadRequestException(
-        'Cannot delete vacancy with existing applications',
+        'No se puede eliminar una vacante con postulaciones existentes',
       );
     }
 
@@ -141,7 +141,7 @@ export class VacanciesService {
     });
 
     if (!vacancy) {
-      throw new NotFoundException(`Vacancy with ID ${vacancyId} not found`);
+      throw new NotFoundException(`Vacante con ID ${vacancyId} no encontrada`);
     }
 
     const currentApplications = vacancy.applications?.length || 0;
@@ -169,7 +169,7 @@ export class VacanciesService {
       .createQueryBuilder('vacancy')
       .where('vacancy.isActive = :isActive', { isActive: true })
       .andWhere(
-        '(SELECT COUNT(*) FROM application WHERE application.vacancyId = vacancy.id) < vacancy.maxApplicants',
+        '(SELECT COUNT(*) FROM applications WHERE applications.vacancy_id = vacancy.id) < vacancy."maxApplicants"',
       )
       .getCount();
 
